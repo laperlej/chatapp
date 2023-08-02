@@ -1,0 +1,5 @@
+#! /usr/bin/bash
+set -e
+
+mvn package
+java -jar target/chat-room-maven-0.1.0.jar main.java.chat.Main

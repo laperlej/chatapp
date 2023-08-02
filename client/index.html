@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Home</title>
+</head>
+
+<body>
+    <main class="container">
+        <h1 id="title">Chat Client</h1>
+        <section id="chat-box">
+            <textarea id="chat" readonly></textarea>
+            <input type="text" id="entry" />
+            <button id="join">join</button>
+            <button id="leave">leave</button>
+        </section>
+    </main>
+</body>
+
+</html>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    #title {
+        text-align: center;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    #chat-box {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    #entry {
+        width: 500px;
+        height: 50px;
+        border: 1px solid black;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+
+    #chat {
+        width: 500px;
+        height: 600px;
+        border: 1px solid black;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        overflow-y: scroll;
+    }
+</style>
+
+<script>
+    class WS {
+        constructor() {
+            this.ws = new WebSocket("ws://localhost:8080/chat");
+            this.onOpen(() => {
+                console.log("connected");
+            });
+            this.onMessage((e) => {
+                console.log(e.data);
+            });
+            this.onClose(() => {
+                console.log("disconnected");
+            });
+            this.onError((e) => {
+                console.log(e);
+            });
+        }
+
+        onOpen(callback) {
+            this.ws.onopen = callback;
+        }
+
+        onMessage(callback) {
+            this.ws.onmessage = callback;
+        }
+
+        onClose(callback) {
+            this.ws.onclose = callback;
+        }
+
+        onError(callback) {
+            this.ws.onerror = callback;
+        }
+
+        isReady() {
+            return this.ws.readyState === WebSocket.OPEN;
+        }
+
+        send(message) {
+            if (this.isReady()) {
+                this.ws.send(message);
+            }
+        }
+
+        close() {
+            this.ws.close();
+        }
+    }
+
+    class Chat {
+        constructor() {
+            this.chat = document.getElementById("chat");
+            this.ws = null;
+        }
+
+        join() {
+            try {
+                this.ws = new WS();
+                this.ws.onMessage((e) => {
+                    let data = JSON.parse(e.data);
+                    this.chat.value += data.user + ": " + data.message + "\n";
+                });
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+        leave() {
+            try {
+                this.ws.close();
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+        send(message) {
+            try {
+                this.ws.send(message);
+            } catch (e) {
+                console.log(e);
+            }
+        }
+    }
+
+    let chat = new Chat();
+
+    join = document.getElementById("join");
+    join.addEventListener("click", () => chat.join());
+
+    leave = document.getElementById("leave");
+    leave.addEventListener("click", () => chat.leave());
+
+    entry = document.getElementById("entry");
+    entry.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            chat.send(entry.value);
+            entry.value = "";
+        }
+    });
+</script>
